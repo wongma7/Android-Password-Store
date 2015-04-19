@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
@@ -16,6 +17,8 @@ import com.zeapo.pwdstore.crypto.PgpHandler;
 import com.zeapo.pwdstore.git.GitActivity;
 import com.zeapo.pwdstore.utils.PasswordRepository;
 
+import net.rdrei.android.dirchooser.DirectoryChooserActivity;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -24,9 +27,11 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class UserPreference extends ActionBarActivity implements Preference.OnPreferenceClickListener {
+    // todo: this is not used anywhere outside this class, transform into enum
     private final static int IMPORT_SSH_KEY = 1;
     private final static int IMPORT_PGP_KEY = 2;
     private final static int EDIT_GIT_INFO = 3;
+    private final static int SELECT_GIT_DIRECTORY = 4;
 
     public static class PrefsFragment extends PreferenceFragment {
         @Override
@@ -34,12 +39,15 @@ public class UserPreference extends ActionBarActivity implements Preference.OnPr
             super.onCreate(savedInstanceState);
             // Load the preferences from an XML resource
             addPreferencesFromResource(R.xml.preference);
+
             Preference keyPref = findPreference("openpgp_key_id");
             keyPref.setSummary(getPreferenceManager().getSharedPreferences().getString("openpgp_key_ids", "No key selected"));
             keyPref.setOnPreferenceClickListener((UserPreference) getActivity());
+
             findPreference("ssh_key").setOnPreferenceClickListener((UserPreference) getActivity());
             findPreference("git_server_info").setOnPreferenceClickListener((UserPreference) getActivity());
             findPreference("git_delete_repo").setOnPreferenceClickListener((UserPreference) getActivity());
+            findPreference("pref_select_external").setOnPreferenceClickListener((UserPreference) getActivity());
         }
     }
 
@@ -82,12 +90,27 @@ public class UserPreference extends ActionBarActivity implements Preference.OnPr
         startActivityForResult(intent, IMPORT_SSH_KEY);
     }
 
-
     private void copySshKey(Uri uri) throws IOException {
         InputStream sshKey = this.getContentResolver().openInputStream(uri);
         byte[] privateKey = IOUtils.toByteArray(sshKey);
         FileUtils.writeByteArrayToFile(new File(getFilesDir() + "/.ssh_key"), privateKey);
         sshKey.close();
+    }
+
+    private void selectExternalGitRepository() {
+        Uri selectedUri = Uri.parse(Environment.getExternalStorageDirectory().getAbsolutePath());
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(selectedUri);
+
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(Intent.createChooser(intent, "Open folder"), SELECT_GIT_DIRECTORY);
+        } else {
+            intent = new Intent(this, DirectoryChooserActivity.class);
+            intent.putExtra(DirectoryChooserActivity.EXTRA_NEW_DIR_NAME,
+                    "DirChooserSample");
+
+            startActivityForResult(intent, SELECT_GIT_DIRECTORY);
+        }
     }
 
     @Override
@@ -143,6 +166,10 @@ public class UserPreference extends ActionBarActivity implements Preference.OnPr
                         ).
                         show();
             }
+            break;
+            case "pref_select_external":
+                selectExternalGitRepository();
+            break;
         }
         return true;
     }
