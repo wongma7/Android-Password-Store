@@ -39,15 +39,22 @@ public class UserPreference extends ActionBarActivity implements Preference.OnPr
             super.onCreate(savedInstanceState);
             // Load the preferences from an XML resource
             addPreferencesFromResource(R.xml.preference);
+            findPreference("ssh_key").setOnPreferenceClickListener((UserPreference) getActivity());
+            findPreference("git_server_info").setOnPreferenceClickListener((UserPreference) getActivity());
+            findPreference("git_delete_repo").setOnPreferenceClickListener((UserPreference) getActivity());
+        }
+
+        @Override
+        public void onResume() {
+            super.onResume();
 
             Preference keyPref = findPreference("openpgp_key_id");
             keyPref.setSummary(getPreferenceManager().getSharedPreferences().getString("openpgp_key_ids", "No key selected"));
             keyPref.setOnPreferenceClickListener((UserPreference) getActivity());
 
-            findPreference("ssh_key").setOnPreferenceClickListener((UserPreference) getActivity());
-            findPreference("git_server_info").setOnPreferenceClickListener((UserPreference) getActivity());
-            findPreference("git_delete_repo").setOnPreferenceClickListener((UserPreference) getActivity());
-            findPreference("pref_select_external").setOnPreferenceClickListener((UserPreference) getActivity());
+            Preference externalRepo = findPreference("pref_select_external");
+            externalRepo.setSummary(getPreferenceManager().getSharedPreferences().getString("git_external_repo", "No external repository selected"));
+            externalRepo.setOnPreferenceClickListener((UserPreference) getActivity());
         }
     }
 
@@ -107,7 +114,7 @@ public class UserPreference extends ActionBarActivity implements Preference.OnPr
         } else {
             intent = new Intent(this, DirectoryChooserActivity.class);
             intent.putExtra(DirectoryChooserActivity.EXTRA_NEW_DIR_NAME,
-                    "DirChooserSample");
+                    "passwordstore");
 
             startActivityForResult(intent, SELECT_GIT_DIRECTORY);
         }
@@ -203,14 +210,17 @@ public class UserPreference extends ActionBarActivity implements Preference.OnPr
                     }
                 }
                 break;
-                case EDIT_GIT_INFO:
-                {
-
-                }
-                break;
                 default:
                 break;
             }
+        }
+
+        // why do they have to use a different resultCode than OK :/
+        if (requestCode == SELECT_GIT_DIRECTORY && resultCode == DirectoryChooserActivity.RESULT_CODE_DIR_SELECTED) {
+            PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                    .edit()
+                    .putString("git_external_repo", data.getStringExtra(DirectoryChooserActivity.RESULT_SELECTED_DIR))
+                    .commit();
         }
     }
 }
