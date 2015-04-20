@@ -5,7 +5,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
@@ -105,19 +104,11 @@ public class UserPreference extends ActionBarActivity implements Preference.OnPr
     }
 
     private void selectExternalGitRepository() {
-        Uri selectedUri = Uri.parse(Environment.getExternalStorageDirectory().getAbsolutePath());
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setData(selectedUri);
+        Intent intent = new Intent(this, DirectoryChooserActivity.class);
+        intent.putExtra(DirectoryChooserActivity.EXTRA_NEW_DIR_NAME,
+                "passwordstore");
 
-        if (intent.resolveActivity(getPackageManager()) != null) {
-            startActivityForResult(Intent.createChooser(intent, "Open folder"), SELECT_GIT_DIRECTORY);
-        } else {
-            intent = new Intent(this, DirectoryChooserActivity.class);
-            intent.putExtra(DirectoryChooserActivity.EXTRA_NEW_DIR_NAME,
-                    "passwordstore");
-
-            startActivityForResult(intent, SELECT_GIT_DIRECTORY);
-        }
+        startActivityForResult(intent, SELECT_GIT_DIRECTORY);
     }
 
     @Override
