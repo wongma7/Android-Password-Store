@@ -54,6 +54,18 @@ public class UserPreference extends ActionBarActivity implements Preference.OnPr
             final Preference externalRepo = findPreference("pref_select_external");
             externalRepo.setSummary(getPreferenceManager().getSharedPreferences().getString("git_external_repo", "No external repository selected"));
             externalRepo.setOnPreferenceClickListener((UserPreference) getActivity());
+
+            Preference.OnPreferenceChangeListener resetRepo = new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object o) {
+                    PasswordRepository.closeRepository();
+                    getPreferenceManager().getSharedPreferences().edit().putBoolean("repo_changed", true).apply();
+                    return true;
+                }
+            };
+
+            findPreference("pref_select_external").setOnPreferenceChangeListener(resetRepo);
+            findPreference("git_external").setOnPreferenceChangeListener(resetRepo);
         }
     }
 
