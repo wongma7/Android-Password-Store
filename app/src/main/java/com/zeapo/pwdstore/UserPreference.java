@@ -144,7 +144,7 @@ public class UserPreference extends ActionBarActivity implements Preference.OnPr
                                 new DialogInterface.OnClickListener() {
                                     public void onClick(DialogInterface dialog, int id) {
                                         try {
-                                            FileUtils.deleteDirectory(PasswordRepository.getWorkTree());
+                                            FileUtils.cleanDirectory(PasswordRepository.getWorkTree());
                                         } catch (Exception e) {
                                             //TODO Handle the diffent cases of exceptions
                                         }
