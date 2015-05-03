@@ -51,7 +51,7 @@ public class UserPreference extends ActionBarActivity implements Preference.OnPr
             keyPref.setSummary(getPreferenceManager().getSharedPreferences().getString("openpgp_key_ids", "No key selected"));
             keyPref.setOnPreferenceClickListener((UserPreference) getActivity());
 
-            Preference externalRepo = findPreference("pref_select_external");
+            final Preference externalRepo = findPreference("pref_select_external");
             externalRepo.setSummary(getPreferenceManager().getSharedPreferences().getString("git_external_repo", "No external repository selected"));
             externalRepo.setOnPreferenceClickListener((UserPreference) getActivity());
         }
@@ -61,8 +61,15 @@ public class UserPreference extends ActionBarActivity implements Preference.OnPr
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getIntent() != null) {
-            if ((getIntent().getStringExtra("operation") != null) && (getIntent().getStringExtra("operation").equals("get_ssh_key"))) {
-                getSshKey();
+            if (getIntent().getStringExtra("operation") != null) {
+                switch (getIntent().getStringExtra("operation")) {
+                    case "get_ssh_key":
+                        getSshKey();
+                        break;
+                    case "git_external":
+                        selectExternalGitRepository();
+                        break;
+                }
             }
         }
 
