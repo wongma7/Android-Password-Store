@@ -52,34 +52,6 @@ public class PasswordStore extends AppCompatActivity {
     @Override
     public void onResume(){
         super.onResume();
-        File dir = null;
-
-        if (settings.getBoolean("git_external", false)) {
-            if (settings.getString("git_external_repo", null) != null) {
-                dir = new File(settings.getString("git_external_repo", null));
-            }
-        } else {
-            dir = new File(getFilesDir() + "/store");
-        }
-        // temp for debug
-        if (dir == null) {
-            Intent intent = new Intent(this, UserPreference.class);
-            intent.putExtra("operation", "git_external");
-            startActivity(intent);
-            return;
-        }
-
-        // uninitialize the repo if the dir does not exist or is absolutely empty
-        if (!dir.exists() || !dir.isDirectory() || FileUtils.listFiles(dir, null, false).isEmpty()) {
-            settings.edit().putBoolean("repository_initialized", false).apply();
-        }
-
-        if (!PasswordRepository.getPasswords(dir).isEmpty()) {
-            settings.edit().putBoolean("repository_initialized", true).apply();
-        }
-
-        // create the repository static variable in PasswordRepository
-        PasswordRepository.getRepository(new File(dir.getAbsolutePath() + "/.git"));
         checkLocalRepository();
     }
 
@@ -251,6 +223,17 @@ public class PasswordStore extends AppCompatActivity {
     }
 
     public void initializeRepositoryInfo() {
+        if (settings.getBoolean("git_external", false) && settings.getString("git_external_repo", null) != null) {
+            File dir = new File(settings.getString("git_external_repo", null));
+
+            if (dir.exists() && dir.isDirectory() && !FileUtils.listFiles(dir, null, true).isEmpty() &&
+                    !PasswordRepository.getPasswords(dir).isEmpty()) {
+                PasswordRepository.closeRepository();
+                checkLocalRepository();
+                return; // if not empty, just show me the passwords!
+            }
+        }
+
         final String keyId = settings.getString("openpgp_key_ids", "");
 
         if (keyId.isEmpty())
@@ -294,6 +277,35 @@ public class PasswordStore extends AppCompatActivity {
     }
 
     private void checkLocalRepository() {
+        File dir = null;
+
+        if (settings.getBoolean("git_external", false)) {
+            if (settings.getString("git_external_repo", null) != null) {
+                dir = new File(settings.getString("git_external_repo", null));
+            }
+        } else {
+            dir = new File(getFilesDir() + "/store");
+        }
+        // temp for debug
+        if (dir == null) {
+            Intent intent = new Intent(this, UserPreference.class);
+            intent.putExtra("operation", "git_external");
+            startActivity(intent);
+            return;
+        }
+
+        // uninitialize the repo if the dir does not exist or is absolutely empty
+        if (!dir.exists() || !dir.isDirectory() || FileUtils.listFiles(dir, null, false).isEmpty()) {
+            settings.edit().putBoolean("repository_initialized", false).apply();
+        }
+
+        if (!PasswordRepository.getPasswords(dir).isEmpty()) {
+            settings.edit().putBoolean("repository_initialized", true).apply();
+        }
+
+        // create the repository static variable in PasswordRepository
+        PasswordRepository.getRepository(new File(dir.getAbsolutePath() + "/.git"));
+
         checkLocalRepository(PasswordRepository.getWorkTree());
     }
 
@@ -476,6 +488,17 @@ public class PasswordStore extends AppCompatActivity {
                     initializeRepositoryInfo();
                     break;
                 case CLONE_REPO_BUTTON:
+                    // duplicate code
+                    if (settings.getBoolean("git_external", false) && settings.getString("git_external_repo", null) != null) {
+                        File dir = new File(settings.getString("git_external_repo", null));
+
+                        if (dir.exists() && dir.isDirectory() && !FileUtils.listFiles(dir, null, true).isEmpty() &&
+                                !PasswordRepository.getPasswords(dir).isEmpty()) {
+                            PasswordRepository.closeRepository();
+                            checkLocalRepository();
+                            return; // if not empty, just show me the passwords!
+                        }
+                    }
                     Intent intent = new Intent(activity, GitActivity.class);
                     intent.putExtra("Operation", GitActivity.REQUEST_CLONE);
                     startActivityForResult(intent, GitActivity.REQUEST_CLONE);
@@ -497,6 +520,7 @@ public class PasswordStore extends AppCompatActivity {
                             intent.putExtra("operation", "git_external");
                             startActivityForResult(intent, operation);
                         } else {
+                            PasswordRepository.closeRepository();
                             checkLocalRepository();
                         }
                     }
